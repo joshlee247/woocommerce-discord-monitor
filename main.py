@@ -5,7 +5,7 @@ import dotenv
 import hikari
 import lightbulb
 from logging import info
-from shopify import Shopify
+from woocommerce import WooCommerce
 from monitoring import monitor_product, monitor_collection, monitor_search
 
 dotenv.load_dotenv()
@@ -22,10 +22,9 @@ async def run_background() -> None:
     while True:
         for monitor in bot.d.monitors:
             info(
-                "Monitoring {type} URL: {url} {query}".format(
+                "Monitoring {type} URL: {url}".format(
                     type=monitor["type"],
                     url=monitor["url"],
-                    query=monitor["query"] or "",
                 )
             )
 
@@ -74,13 +73,13 @@ async def register_collection(ctx: lightbulb.Context) -> None:
         await ctx.respond("❌ Invalid URL")
         return
 
-    config = Shopify.get_shopify_config(ctx.options.url)
+    # config = Shopify.get_shopify_config(ctx.options.url)
+    #
+    # if config is None:
+    #     await ctx.respond("❌ This website is not a Shopify website")
+    #     return
 
-    if config is None:
-        await ctx.respond("❌ This website is not a Shopify website")
-        return
-
-    if Shopify.is_collection(ctx.options.url):
+    if WooCommerce.is_collection(ctx.options.url):
         ctx.bot.d.monitors.insert(
             {
                 "url": ctx.options.url,
@@ -105,19 +104,19 @@ async def register_product(ctx: lightbulb.Context) -> None:
         await ctx.respond("❌ Invalid URL")
         return
 
-    config = Shopify.get_shopify_config(ctx.options.url)
+    # config = Shopify.get_shopify_config(ctx.options.url)
+    #
+    # if config is None:
+    #     await ctx.respond("❌ This website is not a Shopify website")
+    #     return
 
-    if config is None:
-        await ctx.respond("❌ This website is not a Shopify website")
-        return
-
-    if Shopify.is_product(ctx.options.url):
+    if WooCommerce.is_product(ctx.options.url):
         ctx.bot.d.monitors.insert(
             {
-                "url": ctx.options.url,
+                "url": f"{ctx.options.url}",
                 "channel_id": ctx.options.channel.id,
                 "type": "product",
-                "currency": config["currency"],
+                "currency": "USD",
             }
         )
         await ctx.respond("✅ Registered product monitoring!")
@@ -137,10 +136,10 @@ async def search(ctx: lightbulb.Context) -> None:
         await ctx.respond("❌ Invalid URL")
         return
 
-    config = Shopify.get_shopify_config(ctx.options.url)
+    config = WooCommerce.get_shopify_config(ctx.options.url)
 
     if config is None:
-        await ctx.respond("❌ This website is not a Shopify website")
+        await ctx.respond("❌ This website is not a WooCommerce website")
         return
 
     ctx.bot.d.monitors.insert(
@@ -162,7 +161,7 @@ async def refresh_currency(ctx: lightbulb.Context):
     monitors = bot.d.monitors.find()
 
     for monitor in monitors:
-        config = Shopify.get_shopify_config(monitor["url"])
+        config = WooCommerce.get_shopify_config(monitor["url"])
 
         if config is None:
             continue
@@ -223,6 +222,6 @@ if __name__ == "__main__":
 
     bot.run(
         activity=hikari.Activity(
-            name="Shopify websites!", type=hikari.ActivityType.WATCHING
+            name="WooCommerce websites!", type=hikari.ActivityType.WATCHING
         ),
     )
